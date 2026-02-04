@@ -1,0 +1,417 @@
+INFO 2026-02-04 09:50:39,047 vector_store Loaded vector store with 8 vectors
+INFO 2026-02-04 09:50:39,047 embeddings Loading embedding model: all-MiniLM-L6-v2 on cpu
+INFO 2026-02-04 09:50:49,288 embeddings Model loaded successfully. Dimension: 384
+INFO 2026-02-04 09:50:50,771 rag_engine RAG Engine initialized successfully
+INFO 2026-02-04 09:50:52,664 rag_engine Retrieved 5/5 chunks above threshold 0.3
+ERROR 2026-02-04 09:51:04,632 rag_engine Error calling Gemini API: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+Traceback (most recent call last):
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 327, in _generate_gemini
+    response = model.generate_content(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 317, in generate_content
+    self._client = client.get_default_generative_client()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 340, in get_default_generative_client
+    return _client_manager.get_default_client("generative")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 260, in get_default_client
+    client = self.make_client(name)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 218, in make_client
+    raise e
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 210, in make_client
+    client = cls(**self.client_config)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/client.py", line 687, in __init__
+    self._transport = transport_init(
+                      ^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/transports/grpc.py", line 153, in __init__
+    super().__init__(
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/transports/base.py", line 98, in __init__
+    credentials, _ = google.auth.default(
+                     ^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/auth/_default.py", line 752, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+ERROR 2026-02-04 09:51:04,640 rag_engine Error in generate_response: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+Traceback (most recent call last):
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 208, in generate_response
+    response_text = self._generate_gemini(system_prompt, messages)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 327, in _generate_gemini
+    response = model.generate_content(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 317, in generate_content
+    self._client = client.get_default_generative_client()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 340, in get_default_generative_client
+    return _client_manager.get_default_client("generative")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 260, in get_default_client
+    client = self.make_client(name)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 218, in make_client
+    raise e
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 210, in make_client
+    client = cls(**self.client_config)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/client.py", line 687, in __init__
+    self._transport = transport_init(
+                      ^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/transports/grpc.py", line 153, in __init__
+    super().__init__(
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/transports/base.py", line 98, in __init__
+    credentials, _ = google.auth.default(
+                     ^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/auth/_default.py", line 752, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+ERROR 2026-02-04 09:51:04,641 rag_engine Error in get_response: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+Traceback (most recent call last):
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 100, in get_response
+    response, sources = self.generate_response(
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 208, in generate_response
+    response_text = self._generate_gemini(system_prompt, messages)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 327, in _generate_gemini
+    response = model.generate_content(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 317, in generate_content
+    self._client = client.get_default_generative_client()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 340, in get_default_generative_client
+    return _client_manager.get_default_client("generative")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 260, in get_default_client
+    client = self.make_client(name)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 218, in make_client
+    raise e
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/client.py", line 210, in make_client
+    client = cls(**self.client_config)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/client.py", line 687, in __init__
+    self._transport = transport_init(
+                      ^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/transports/grpc.py", line 153, in __init__
+    super().__init__(
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/transports/base.py", line 98, in __init__
+    credentials, _ = google.auth.default(
+                     ^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/auth/_default.py", line 752, in default
+    raise exceptions.DefaultCredentialsError(_CLOUD_SDK_MISSING_CREDENTIALS)
+google.auth.exceptions.DefaultCredentialsError: 
+  No API_KEY or ADC found. Please either:
+    - Set the `GOOGLE_API_KEY` environment variable.
+    - Manually pass the key with `genai.configure(api_key=my_api_key)`.
+    - Or set up Application Default Credentials, see https://ai.google.dev/gemini-api/docs/oauth for more information.
+INFO 2026-02-04 09:51:51,728 vector_store Loaded vector store with 8 vectors
+INFO 2026-02-04 09:51:51,728 embeddings Loading embedding model: all-MiniLM-L6-v2 on cpu
+INFO 2026-02-04 09:52:01,866 embeddings Model loaded successfully. Dimension: 384
+INFO 2026-02-04 09:52:02,989 rag_engine RAG Engine initialized successfully
+INFO 2026-02-04 09:52:02,990 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 09:52:07,814 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 4.82s, Total: 4.82s
+INFO 2026-02-04 09:52:19,851 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 09:52:20,931 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.08s, Total: 1.08s
+INFO 2026-02-04 09:52:45,571 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 09:52:46,484 rag_engine Query processed successfully. Retrieval: 1.76s, LLM: 0.91s, Total: 2.67s
+INFO 2026-02-04 10:02:23,174 vector_store Loaded vector store with 8 vectors
+INFO 2026-02-04 10:02:23,174 embeddings Loading embedding model: all-MiniLM-L6-v2 on cpu
+INFO 2026-02-04 10:02:34,046 embeddings Model loaded successfully. Dimension: 384
+INFO 2026-02-04 10:02:35,173 rag_engine RAG Engine initialized successfully
+INFO 2026-02-04 10:02:35,174 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:02:39,358 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 4.18s, Total: 4.19s
+INFO 2026-02-04 10:02:50,002 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:02:52,079 rag_engine Query processed successfully. Retrieval: 1.66s, LLM: 2.08s, Total: 3.74s
+INFO 2026-02-04 10:03:19,176 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:03:20,663 rag_engine Query processed successfully. Retrieval: 0.02s, LLM: 1.49s, Total: 1.50s
+INFO 2026-02-04 10:03:22,895 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:03:24,412 rag_engine Query processed successfully. Retrieval: 0.02s, LLM: 1.52s, Total: 1.53s
+INFO 2026-02-04 10:03:26,136 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:03:27,925 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.79s, Total: 1.79s
+INFO 2026-02-04 10:08:27,506 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:08:29,145 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.64s, Total: 1.64s
+INFO 2026-02-04 10:09:27,309 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:09:28,535 rag_engine Query processed successfully. Retrieval: 0.01s, LLM: 1.23s, Total: 1.24s
+INFO 2026-02-04 10:10:42,309 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:10:43,584 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.28s, Total: 1.28s
+INFO 2026-02-04 10:10:47,702 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:10:50,456 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 2.75s, Total: 2.75s
+INFO 2026-02-04 10:10:52,282 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:10:53,526 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.24s, Total: 1.24s
+INFO 2026-02-04 10:10:54,842 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:10:55,882 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.04s, Total: 1.04s
+INFO 2026-02-04 10:10:57,267 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:10:59,055 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.79s, Total: 1.79s
+INFO 2026-02-04 10:11:01,016 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:11:02,846 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.83s, Total: 1.83s
+INFO 2026-02-04 10:13:45,778 vector_store Loaded vector store with 8 vectors
+INFO 2026-02-04 10:13:45,778 embeddings Loading embedding model: all-MiniLM-L6-v2 on cpu
+INFO 2026-02-04 10:13:56,624 embeddings Model loaded successfully. Dimension: 384
+INFO 2026-02-04 10:13:57,624 rag_engine RAG Engine initialized successfully
+INFO 2026-02-04 10:13:58,739 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:14:04,786 rag_engine Query processed successfully. Retrieval: 1.11s, LLM: 6.05s, Total: 7.16s
+INFO 2026-02-04 10:14:15,296 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:14:17,707 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 2.41s, Total: 2.41s
+INFO 2026-02-04 10:14:19,125 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:14:20,171 rag_engine Query processed successfully. Retrieval: 0.00s, LLM: 1.05s, Total: 1.05s
+INFO 2026-02-04 10:14:40,153 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:14:42,488 rag_engine Query processed successfully. Retrieval: 0.01s, LLM: 2.33s, Total: 2.35s
+INFO 2026-02-04 10:15:30,117 rag_engine Retrieved 5/5 chunks above threshold 0.3
+INFO 2026-02-04 10:15:31,639 rag_engine Query processed successfully. Retrieval: 0.02s, LLM: 1.52s, Total: 1.54s
+INFO 2026-02-04 10:17:26,538 rag_engine Retrieved 5/5 chunks above threshold 0.3
+ERROR 2026-02-04 10:17:27,581 rag_engine Error calling Gemini API: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 32.480767696s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 32
+}
+]
+Traceback (most recent call last):
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 327, in _generate_gemini
+    response = model.generate_content(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 331, in generate_content
+    response = self._client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/client.py", line 827, in generate_content
+    response = rpc(
+               ^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/gapic_v1/method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+           ^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 147, in retry_target
+    result = target()
+             ^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/grpc_helpers.py", line 77, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 32.480767696s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 32
+}
+]
+ERROR 2026-02-04 10:17:27,585 rag_engine Error in generate_response: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 32.480767696s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 32
+}
+]
+Traceback (most recent call last):
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 208, in generate_response
+    response_text = self._generate_gemini(system_prompt, messages)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 327, in _generate_gemini
+    response = model.generate_content(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 331, in generate_content
+    response = self._client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/client.py", line 827, in generate_content
+    response = rpc(
+               ^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/gapic_v1/method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+           ^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 147, in retry_target
+    result = target()
+             ^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/grpc_helpers.py", line 77, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 32.480767696s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 32
+}
+]
+ERROR 2026-02-04 10:17:27,587 rag_engine Error in get_response: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 32.480767696s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 32
+}
+]
+Traceback (most recent call last):
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 100, in get_response
+    response, sources = self.generate_response(
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 208, in generate_response
+    response_text = self._generate_gemini(system_prompt, messages)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/rag_chatbot/rag_service/rag_engine.py", line 327, in _generate_gemini
+    response = model.generate_content(prompt)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/generativeai/generative_models.py", line 331, in generate_content
+    response = self._client.generate_content(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/ai/generativelanguage_v1beta/services/generative_service/client.py", line 827, in generate_content
+    response = rpc(
+               ^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/gapic_v1/method.py", line 131, in __call__
+    return wrapped_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 294, in retry_wrapped_func
+    return retry_target(
+           ^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 156, in retry_target
+    next_sleep = _retry_error_helper(
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_base.py", line 214, in _retry_error_helper
+    raise final_exc from source_exc
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/retry/retry_unary.py", line 147, in retry_target
+    result = target()
+             ^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/timeout.py", line 130, in func_with_timeout
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/laxman/programs/python/a/lib/python3.12/site-packages/google/api_core/grpc_helpers.py", line 77, in error_remapped_callable
+    raise exceptions.from_grpc_error(exc) from exc
+google.api_core.exceptions.ResourceExhausted: 429 You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. 
+* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash-lite
+Please retry in 32.480767696s. [links {
+  description: "Learn more about Gemini API quotas"
+  url: "https://ai.google.dev/gemini-api/docs/rate-limits"
+}
+, violations {
+  quota_metric: "generativelanguage.googleapis.com/generate_content_free_tier_requests"
+  quota_id: "GenerateRequestsPerDayPerProjectPerModel-FreeTier"
+  quota_dimensions {
+    key: "model"
+    value: "gemini-2.5-flash-lite"
+  }
+  quota_dimensions {
+    key: "location"
+    value: "global"
+  }
+  quota_value: 20
+}
+, retry_delay {
+  seconds: 32
+}
+]
