@@ -20,7 +20,7 @@ urlpatterns = [
     # path('', views.index, name='index'),
     path('chat/', views.chat_view, name='chat'),
     path('api/public/chat/', public_views.public_chat_api, name='public_chat_api'),
-    # path('api/public/health/', public_views.public_health_check, name='public_health'),
+    path('api/health/', public_views.public_health_check, name='public_health'),
     # API endpoints
     # path('api/', include(router.urls)),
     # path('api/chat/', views.chat_api, name='chat_api'),
