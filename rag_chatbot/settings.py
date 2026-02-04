@@ -213,6 +213,10 @@ RATE_LIMIT_REQUESTS_PER_HOUR = env.int('RATE_LIMIT_REQUESTS_PER_HOUR', default=1
 RATE_LIMIT_WINDOW_SECONDS = env.int('RATE_LIMIT_WINDOW_SECONDS', default=3)
 RATE_LIMIT_SKIP_PATHS = env.list('RATE_LIMIT_SKIP_PATHS', default=['/admin/', '/static/', '/media/'])
 
+# Block direct access to media/static URLs
+BLOCK_MEDIA_STATIC = env.bool('BLOCK_MEDIA_STATIC', default=False)
+BLOCK_MEDIA_STATIC_PATHS = env.list('BLOCK_MEDIA_STATIC_PATHS', default=['/media/', '/static/'])
+
 # Celery Configuration
 CELERY_BROKER_URL = env('CELERY_BROKER_URL')
 CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL')

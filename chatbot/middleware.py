@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.core.cache import cache
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotFound
 
 from .models import RequestLog
 
@@ -19,12 +19,20 @@ class RateLimitAndLogMiddleware:
         self.limit = getattr(settings, "RATE_LIMIT_REQUESTS_PER_HOUR", 10)
         self.window_seconds = getattr(settings, "RATE_LIMIT_WINDOW_SECONDS", 3)
         self.skip_paths = set(getattr(settings, "RATE_LIMIT_SKIP_PATHS", []))
+        self.block_media_static = getattr(settings, "BLOCK_MEDIA_STATIC", False)
+        self.block_paths = set(getattr(settings, "BLOCK_MEDIA_STATIC_PATHS", ["/media/", "/static/"]))
 
     def __call__(self, request):
         ip_address = get_client_ip(request)
         user = request.user if request.user.is_authenticated else None
         user_key = f"user:{user.id}" if user else "anon"
         path = request.path or ""
+
+        if self.block_media_static and any(path.startswith(prefix) for prefix in self.block_paths):
+            status_code = 404
+            response = HttpResponseNotFound("Not found")
+            self._log_request(request, ip_address, user, status_code, blocked=True)
+            return response
 
         should_skip = any(path.startswith(prefix) for prefix in self.skip_paths)
         blocked = False

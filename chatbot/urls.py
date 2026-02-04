@@ -17,7 +17,7 @@ app_name = 'chatbot'
 urlpatterns = [
     # Template views
     path('', public_views.portfolio_chatbot_view, name='portfolio_home'),
-    path('', views.index, name='index'),
+    # path('', views.index, name='index'),
     path('chat/', views.chat_view, name='chat'),
     path('api/public/chat/', public_views.public_chat_api, name='public_chat_api'),
     # path('api/public/health/', public_views.public_health_check, name='public_health'),
