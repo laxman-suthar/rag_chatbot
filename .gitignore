@@ -1,3 +1,4 @@
 .env
 media/knowledge_base/*
 db.sqlite3
+logs/*
