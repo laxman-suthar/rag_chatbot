@@ -1,3 +1,5 @@
+# Production (lightweight) dependencies
+
 # Django Core
 Django==5.0.1
 djangorestframework==3.14.0
@@ -11,17 +13,12 @@ django-filter==23.5
 
 # RAG & AI
 httpx==0.24.1
-anthropic==0.39.0
-openai==1.54.0
 google-generativeai==0.7.2
 sentence-transformers==2.3.1
 faiss-cpu==1.13.2
 transformers==4.37.2
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.10.0+cpu
-torchvision==0.25.0+cpu
-torchaudio==2.10.0+cpu
-
 
 # Document Processing
 PyPDF2==3.0.1
@@ -30,13 +27,7 @@ beautifulsoup4==4.12.3
 lxml==5.1.0
 markdown==3.5.2
 python-magic==0.4.27
-pdfplumber==0.10.4  # Better PDF extraction
-
-# Text Processing
-nltk==3.8.1
-spacy==3.7.2
-langchain==0.1.6  # Optional, for advanced RAG
-langchain-community==0.0.19
+pdfplumber==0.10.4
 
 # Utilities
 python-dotenv==1.0.1
@@ -44,26 +35,7 @@ requests==2.31.0
 celery==5.3.6  # For async tasks
 redis==5.0.1  # Caching & Celery broker
 
-# Development
-pytest==7.4.4
-pytest-django==4.7.0
-coverage==7.4.1
-black==24.1.1
-flake8==7.0.0
-isort==5.13.2
-
 # Production
 gunicorn==21.2.0
 whitenoise==6.6.0  # Static files serving
 sentry-sdk==1.40.0  # Error tracking
-
-# API Documentation
-drf-yasg==1.21.7  # Swagger/OpenAPI
-
-# Monitoring & Logging
-django-extensions==3.2.3
-django-debug-toolbar==4.2.0  # Dev only
-
-# File Storage (optional)
-boto3==1.34.34  # For AWS S3
-django-storages==1.14.2

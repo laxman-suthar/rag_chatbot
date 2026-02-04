@@ -226,8 +226,6 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
 # AI Configuration
-ANTHROPIC_API_KEY = env('ANTHROPIC_API_KEY', default='')
-OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
 GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
 
 # RAG Configuration
@@ -241,7 +239,7 @@ RAG_CONFIG = {
 
 # LLM Configuration
 LLM_CONFIG = {
-    'provider': env('LLM_PROVIDER', default='anthropic'),
+    'provider': env('LLM_PROVIDER', default='gemini'),
     'model': env('LLM_MODEL', default='claude-sonnet-4-20250514'),
     'temperature': env.float('LLM_TEMPERATURE', default=0.7),
     'max_tokens': env.int('LLM_MAX_TOKENS', default=1000),

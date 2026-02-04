@@ -1,7 +1,7 @@
 """
 RAG (Retrieval-Augmented Generation) Engine
 Core logic for document retrieval and response generation
-FIXED VERSION - Compatible with latest Anthropic SDK
+ FIXED VERSION - Gemini-only
 """
 
 import logging
@@ -25,25 +25,7 @@ class RAGEngine:
         self.embedding_model = EmbeddingModel()
         
         # Initialize LLM client based on provider
-        if settings.LLM_CONFIG['provider'] == 'anthropic':
-            try:
-                import anthropic
-                # Fixed: Simple initialization without extra parameters
-                self.llm_client = anthropic.Anthropic(
-                    api_key=settings.ANTHROPIC_API_KEY
-                )
-            except Exception as e:
-                logger.error(f"Failed to initialize Anthropic client: {str(e)}")
-                raise
-                
-        elif settings.LLM_CONFIG['provider'] == 'openai':
-            try:
-                import openai
-                self.llm_client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {str(e)}")
-                raise
-        elif settings.LLM_CONFIG['provider'] == 'gemini':
+        if settings.LLM_CONFIG['provider'] == 'gemini':
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -200,11 +182,7 @@ class RAGEngine:
             messages = self._build_messages(query, conversation_history)
             
             # Generate response based on provider
-            if self.llm_config['provider'] == 'anthropic':
-                response_text = self._generate_anthropic(system_prompt, messages)
-            elif self.llm_config['provider'] == 'openai':
-                response_text = self._generate_openai(system_prompt, messages)
-            elif self.llm_config['provider'] == 'gemini':
+            if self.llm_config['provider'] == 'gemini':
                 response_text = self._generate_gemini(system_prompt, messages)
             else:
                 raise ValueError(f"Unsupported provider: {self.llm_config['provider']}")
@@ -276,42 +254,6 @@ Remember: Only use information from the context above. If the answer isn't in th
         
         return messages
     
-    def _generate_anthropic(self, system_prompt: str, messages: List[Dict]) -> str:
-        """Generate response using Anthropic Claude"""
-        try:
-            response = self.llm_client.messages.create(
-                model=self.llm_config['model'],
-                max_tokens=self.llm_config['max_tokens'],
-                temperature=self.llm_config['temperature'],
-                system=system_prompt,
-                messages=messages
-            )
-            
-            return response.content[0].text
-            
-        except Exception as e:
-            logger.error(f"Error calling Anthropic API: {str(e)}", exc_info=True)
-            raise
-    
-    def _generate_openai(self, system_prompt: str, messages: List[Dict]) -> str:
-        """Generate response using OpenAI"""
-        try:
-            # Add system message
-            full_messages = [{'role': 'system', 'content': system_prompt}] + messages
-            
-            response = self.llm_client.chat.completions.create(
-                model=self.llm_config['model'],
-                messages=full_messages,
-                temperature=self.llm_config['temperature'],
-                max_tokens=self.llm_config['max_tokens']
-            )
-            
-            return response.choices[0].message.content
-            
-        except Exception as e:
-            logger.error(f"Error calling OpenAI API: {str(e)}", exc_info=True)
-            raise
-
     def _generate_gemini(self, system_prompt: str, messages: List[Dict]) -> str:
         """Generate response using Google Gemini"""
         try:

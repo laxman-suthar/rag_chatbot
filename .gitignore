@@ -2,3 +2,4 @@
 media/knowledge_base/*
 db.sqlite3
 logs/*
+requirements.prod.txt
