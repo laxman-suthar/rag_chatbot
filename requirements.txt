@@ -1,11 +1,13 @@
 # Production (lightweight) dependencies
+Django>=4.2.0
+djangorestframework
+psycopg[binary]>=3.1.0
+uvicorn
 
 # Django Core
-Django==5.0.1
-djangorestframework==3.14.0
+
 django-cors-headers==4.3.1
 django-environ==0.11.2
-psycopg2-binary==2.9.9  # PostgreSQL adapter
 
 # Authentication & Security
 djangorestframework-simplejwt==5.3.1
@@ -14,14 +16,14 @@ django-filter==23.5
 # RAG & AI
 httpx==0.24.1
 google-generativeai==0.7.2
-sentence-transformers==2.3.1
-faiss-cpu==1.13.2
+sentence-transformers
+faiss-cpu
 transformers==4.37.2
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 
 # Document Processing
-PyPDF2==3.0.1
+PyPDF2
 python-docx==1.1.0
 beautifulsoup4==4.12.3
 lxml==5.1.0
@@ -30,7 +32,7 @@ python-magic==0.4.27
 pdfplumber==0.10.4
 
 # Utilities
-python-dotenv==1.0.1
+python-dotenv
 requests==2.31.0
 celery==5.3.6  # For async tasks
 redis==5.0.1  # Caching & Celery broker
