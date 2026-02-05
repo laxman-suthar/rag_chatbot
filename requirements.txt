@@ -18,7 +18,7 @@ sentence-transformers==2.3.1
 faiss-cpu==1.13.2
 transformers==4.37.2
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.9.1+cpu
+torch
 
 # Document Processing
 PyPDF2==3.0.1
