@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS build
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -6,27 +6,40 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies
-# RUN apt-get update && apt-get install -y \
-#     build-essential \
-#     postgresql-client \
-#     libpq-dev \
-#     git \
-#     curl \
-#     && rm -rf /var/lib/apt/lists/*
+# Build dependencies for wheels
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
 COPY requirements.prod.txt .
 
-# Install Python dependencies
+# Build wheels into a dedicated directory
 RUN pip install --upgrade pip && \
-    pip install -r requirements.prod.txt
+    pip wheel --no-cache-dir --wheel-dir /wheels -r requirements.prod.txt
 
-# Download spaCy model (optional)
-# RUN python -m spacy download en_core_web_sm
+# Runtime image
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install wheels from builder (no build tools needed here)
+COPY --from=build /wheels /wheels
+RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
 
 # Copy project files
 COPY . .
