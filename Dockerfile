@@ -1,22 +1,22 @@
 FROM python:3.11-slim
 
 # Set environment variables
-# ENV PYTHONUNBUFFERED=1 \
-#     PYTHONDONTWRITEBYTECODE=1 \
-#     PIP_NO_CACHE_DIR=1 \
-#     PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Set work directory
 WORKDIR /app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    postgresql-client \
-    libpq-dev \
-    git \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# RUN apt-get update && apt-get install -y \
+#     build-essential \
+#     postgresql-client \
+#     libpq-dev \
+#     git \
+#     curl \
+#     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
 COPY requirements.prod.txt .
