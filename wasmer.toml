@@ -1,0 +1,4 @@
+[app]
+name = "rag-chatbot"
+type = "django"
+root = "."
