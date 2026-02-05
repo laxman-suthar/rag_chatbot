@@ -187,25 +187,21 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_CREDENTIALS = True
 
-# Caching with Redis
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-#         'LOCATION': env('REDIS_URL'),
-#         'OPTIONS': {
-#             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-#         },
-#         'KEY_PREFIX': 'chatbot',
-#         'TIMEOUT': 300,  # 5 minutes
-#     }
-# }
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': env('REDIS_URL'),
+# Caching with Redis (fallback to local memory if not configured)
+REDIS_URL = env('REDIS_URL', default='').strip()
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
 
 # Rate limit and request logging
 RATE_LIMIT_ENABLED = env.bool('RATE_LIMIT_ENABLED', default=True)
@@ -217,9 +213,9 @@ RATE_LIMIT_SKIP_PATHS = env.list('RATE_LIMIT_SKIP_PATHS', default=['/admin/', '/
 BLOCK_MEDIA_STATIC = env.bool('BLOCK_MEDIA_STATIC', default=False)
 BLOCK_MEDIA_STATIC_PATHS = env.list('BLOCK_MEDIA_STATIC_PATHS', default=['/media/', '/static/'])
 
-# Celery Configuration
-CELERY_BROKER_URL = env('CELERY_BROKER_URL')
-CELERY_RESULT_BACKEND = env('CELERY_BROKER_URL')
+# Celery Configuration (optional for build/runtime)
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='').strip()
+CELERY_RESULT_BACKEND = CELERY_BROKER_URL or None
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
