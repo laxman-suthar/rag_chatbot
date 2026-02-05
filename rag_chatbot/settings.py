@@ -245,10 +245,16 @@ LLM_CONFIG = {
     'max_tokens': env.int('LLM_MAX_TOKENS', default=1000),
 }
 
-# Embedding Configuration
+# Embedding Configuration (Gemini embeddings by default)
+_embedding_dim_raw = env('EMBEDDING_DIMENSION', default='').strip()
+_embedding_dim = int(_embedding_dim_raw) if _embedding_dim_raw else None
+
 EMBEDDING_CONFIG = {
-    'model_name': env('EMBEDDING_MODEL', default='all-MiniLM-L6-v2'),
+    'provider': env('EMBEDDING_PROVIDER', default='gemini'),
+    'model_name': env('EMBEDDING_MODEL', default='models/embedding-001'),
+    'dimension': _embedding_dim,
     'device': 'cuda' if os.environ.get('USE_GPU', 'false').lower() == 'true' else 'cpu',
+    'chroma_telemetry': env.bool('CHROMA_TELEMETRY', default=False),
 }
 
 # File Upload Settings

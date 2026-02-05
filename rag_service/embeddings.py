@@ -1,11 +1,10 @@
 """
-Embedding Model wrapper using Sentence Transformers
+Embedding Model wrapper using Gemini embeddings
 """
 
 import logging
 import numpy as np
 from typing import List, Union
-from sentence_transformers import SentenceTransformer
 from django.conf import settings
 from django.core.cache import cache
 
@@ -19,19 +18,28 @@ class EmbeddingModel:
     
     def __init__(self):
         """Initialize embedding model"""
+        self.provider = settings.EMBEDDING_CONFIG.get('provider', 'gemini')
         self.model_name = settings.EMBEDDING_CONFIG['model_name']
         self.device = settings.EMBEDDING_CONFIG.get('device', 'cpu')
         self.cache_enabled = settings.EMBEDDING_CONFIG.get('cache_enabled', True)
         self.cache_ttl = settings.EMBEDDING_CONFIG.get('cache_ttl', 3600)  # 1 hour
         
-        # Load model
-        logger.info(f"Loading embedding model: {self.model_name} on {self.device}")
+        if self.provider != 'gemini':
+            raise ValueError(f"Unsupported embedding provider: {self.provider}")
+
+        # Initialize Gemini client
+        logger.info(f"Initializing Gemini embeddings: {self.model_name}")
         try:
-            self.model = SentenceTransformer(self.model_name, device=self.device)
-            self.dimension = self.model.get_sentence_embedding_dimension()
-            logger.info(f"Model loaded successfully. Dimension: {self.dimension}")
+            import google.generativeai as genai
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            self.client = genai
+            self.dimension = settings.EMBEDDING_CONFIG.get('dimension')
+            if self.dimension:
+                logger.info(f"Gemini embeddings ready. Dimension: {self.dimension}")
+            else:
+                logger.info("Gemini embeddings ready. Dimension: unknown (lazy)")
         except Exception as e:
-            logger.error(f"Error loading model: {str(e)}", exc_info=True)
+            logger.error(f"Error initializing Gemini embeddings: {str(e)}", exc_info=True)
             raise
     
     def encode(
@@ -67,14 +75,14 @@ class EmbeddingModel:
                     logger.debug("Using cached embedding")
                     return cached_embedding
             
-            # Generate embeddings
-            embeddings = self.model.encode(
-                texts,
-                batch_size=batch_size,
-                show_progress_bar=show_progress,
-                convert_to_numpy=True,
-                normalize_embeddings=normalize
-            )
+            # Generate embeddings (Gemini API)
+            if single_input:
+                embeddings = self._embed_single(texts[0])
+            else:
+                embeddings = self._embed_batch(texts)
+
+            if normalize:
+                embeddings = self._normalize_embeddings(embeddings)
             
             # Cache single query embeddings
             if single_input and self.cache_enabled:
@@ -109,6 +117,41 @@ class EmbeddingModel:
             batch_size=batch_size,
             show_progress=show_progress
         )
+
+    def _embed_single(self, text: str) -> np.ndarray:
+        """Embed a single text using Gemini"""
+        result = self.client.embed_content(
+            model=self.model_name,
+            content=text,
+            task_type="retrieval_document"
+        )
+        if hasattr(result, "embedding"):
+            embedding = result.embedding
+        else:
+            embedding = result.get('embedding') or result.get('embeddings')
+        return np.array(embedding, dtype='float32')
+
+    def _embed_batch(self, texts: List[str]) -> np.ndarray:
+        """Embed a batch of texts using Gemini (sequential calls)"""
+        embeddings = []
+        for text in texts:
+            embedding = self._embed_single(text)
+            embeddings.append(embedding)
+        return np.vstack(embeddings)
+
+    def _normalize_embeddings(self, embeddings: np.ndarray) -> np.ndarray:
+        """L2-normalize embeddings"""
+        if embeddings.ndim == 1:
+            denom = np.linalg.norm(embeddings) or 1.0
+            return embeddings / denom
+        denom = np.linalg.norm(embeddings, axis=1, keepdims=True)
+        denom[denom == 0] = 1.0
+        return embeddings / denom
+
+    def _get_embedding_dimension(self) -> int:
+        """Determine embedding dimension by embedding a short probe"""
+        probe = self._embed_single("dimension probe")
+        return int(probe.shape[0])
     
     def _get_cache_key(self, text: str) -> str:
         """Generate cache key for text"""
@@ -162,11 +205,7 @@ class EmbeddingModel:
             List of model names
         """
         return [
-            'all-MiniLM-L6-v2',          # Fast, 384 dim, good quality
-            'all-mpnet-base-v2',          # Best quality, 768 dim, slower
-            'all-MiniLM-L12-v2',          # Balance, 384 dim
-            'paraphrase-multilingual-MiniLM-L12-v2',  # Multilingual
-            'msmarco-distilbert-base-v4', # Good for search
+            'models/embedding-001',
         ]
     
     @staticmethod
@@ -181,31 +220,10 @@ class EmbeddingModel:
             Dictionary with model info
         """
         model_specs = {
-            'all-MiniLM-L6-v2': {
-                'dimension': 384,
-                'max_length': 256,
+            'models/embedding-001': {
+                'dimension': 'variable',
+                'max_length': 'provider-defined',
                 'speed': 'fast',
-                'quality': 'good',
-                'multilingual': False,
-            },
-            'all-mpnet-base-v2': {
-                'dimension': 768,
-                'max_length': 384,
-                'speed': 'medium',
-                'quality': 'best',
-                'multilingual': False,
-            },
-            'all-MiniLM-L12-v2': {
-                'dimension': 384,
-                'max_length': 256,
-                'speed': 'fast',
-                'quality': 'very good',
-                'multilingual': False,
-            },
-            'paraphrase-multilingual-MiniLM-L12-v2': {
-                'dimension': 384,
-                'max_length': 128,
-                'speed': 'medium',
                 'quality': 'good',
                 'multilingual': True,
             },

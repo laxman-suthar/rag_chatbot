@@ -29,7 +29,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     # Admin
-    # path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls),
     
     # # Authentication endpoints
     # path('api/auth/', include('chatbot.auth_urls')),
