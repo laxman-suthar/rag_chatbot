@@ -29,10 +29,10 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = env('SECRET_KEY', default='')
 
-SECRET_KEY = env('SECRET_KEY', default='whesiufkjwhsanwekdfshndrxdf34wh8375685ye8723iwueshdrfq39u485u657hdshfvkzj')  # Single DEBUG declaration - defaults to True for development
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env('DEBUG', default=True)  # Single DEBUG declaration - defaults to True for development
+DEBUG = env('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
@@ -308,18 +308,8 @@ LOGGING = {
 (BASE_DIR / 'logs').mkdir(exist_ok=True)
 
 # Security Settings for Production
-# All SSL/HTTPS settings are commented out for development
-# Uncomment these when deploying to production with proper SSL certificate
-# if not DEBUG:
-#     SECURE_SSL_REDIRECT = True
-#     SESSION_COOKIE_SECURE = True
-#     CSRF_COOKIE_SECURE = True
-#     SECURE_BROWSER_XSS_FILTER = True
-#     SECURE_CONTENT_TYPE_NOSNIFF = True
-#     X_FRAME_OPTIONS = 'DENY'
-#     SECURE_HSTS_SECONDS = 31536000
-#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-#     SECURE_HSTS_PRELOAD = True
+# Security Settings for Production
+# If you later enable SSL, you can add secure settings here.
 
 # Email Configuration (optional)
 EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')

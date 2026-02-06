@@ -11,10 +11,9 @@ from django.conf import settings
 import numpy as np
 
 # Document processing imports
-import PyPDF2
+from pypdf import PdfReader  # Changed from PyPDF2
 from docx import Document as DocxDocument
 from bs4 import BeautifulSoup
-import markdown
 
 logger = logging.getLogger('rag_service')
 
@@ -104,14 +103,14 @@ class DocumentProcessor:
             raise
     
     def _extract_pdf(self, file_path: Path) -> Tuple[str, Dict]:
-        """Extract text from PDF"""
+        """Extract text from PDF using pypdf"""
         try:
             text_parts = []
             page_map = {}  # Maps chunk index to page number
             current_char_count = 0
             
             with open(file_path, 'rb') as file:
-                pdf_reader = PyPDF2.PdfReader(file)
+                pdf_reader = PdfReader(file)  # Changed from PyPDF2.PdfReader
                 
                 for page_num, page in enumerate(pdf_reader.pages, 1):
                     page_text = page.extract_text()
@@ -169,16 +168,11 @@ class DocumentProcessor:
             raise
     
     def _extract_markdown(self, file_path: Path) -> Tuple[str, Dict]:
-        """Extract text from Markdown"""
+        """Extract text from Markdown (as plain text)"""
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
-                md_text = file.read()
-                
-                # Convert markdown to HTML then to text
-                html = markdown.markdown(md_text)
-                soup = BeautifulSoup(html, 'html.parser')
-                text = soup.get_text()
-                
+                # Just return markdown as-is (no conversion needed for RAG)
+                text = file.read()
                 return text, {}
                 
         except Exception as e:
@@ -257,14 +251,12 @@ class DocumentProcessor:
         Returns:
             List of sentences
         """
-        # Simple sentence splitting (could use nltk for better results)
+        # Simple sentence splitting
         sentences = re.split(r'(?<=[.!?])\s+', text)
         return [s.strip() for s in sentences if s.strip()]
     
     def _get_page_for_chunk(self, chunk_index: int, page_map: Dict) -> int:
         """Estimate page number for a chunk (for PDFs)"""
-        # This is a simplified version
-        # In production, you'd need more sophisticated mapping
         if not page_map:
             return None
         
@@ -296,7 +288,7 @@ class DocumentProcessor:
             # Get page count for PDFs
             if file_ext == '.pdf':
                 with open(file_path, 'rb') as file:
-                    pdf_reader = PyPDF2.PdfReader(file)
+                    pdf_reader = PdfReader(file)  # Changed from PyPDF2
                     stats['page_count'] = len(pdf_reader.pages)
             
             return stats
@@ -306,6 +298,7 @@ class DocumentProcessor:
             return {}
 
 
+# Rest of the DocumentIndexer class remains the same
 class DocumentIndexer:
     """
     High-level document indexing with vector store integration

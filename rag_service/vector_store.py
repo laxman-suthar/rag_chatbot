@@ -101,9 +101,9 @@ class VectorStore:
             return False
 
     def search(
-        self,
-        query_embedding: np.ndarray,
-        k: int = 5
+    self,
+    query_embedding: np.ndarray,
+    k: int = 5
     ) -> List[Dict]:
         """
         Search for similar documents
@@ -116,10 +116,10 @@ class VectorStore:
             results = self.collection.query(
                 query_embeddings=query_embedding.tolist(),
                 n_results=k,
-                include=["metadatas", "documents", "distances", "ids"]
+                include=["metadatas", "documents", "distances"]  # ← REMOVE "ids"
             )
 
-            if not results or not results.get('ids'):
+            if not results or not results.get('ids'):  # ids is still returned by default
                 return []
 
             hits = []
@@ -144,7 +144,7 @@ class VectorStore:
         except Exception as e:
             logger.error(f"Error searching vector store: {str(e)}", exc_info=True)
             return []
-
+        
     def delete_document(self, document_id: str) -> bool:
         """
         Delete all chunks associated with a document

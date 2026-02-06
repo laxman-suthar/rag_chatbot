@@ -20,7 +20,6 @@ class EmbeddingModel:
         """Initialize embedding model"""
         self.provider = settings.EMBEDDING_CONFIG.get('provider', 'gemini')
         self.model_name = settings.EMBEDDING_CONFIG['model_name']
-        self.device = settings.EMBEDDING_CONFIG.get('device', 'cpu')
         self.cache_enabled = settings.EMBEDDING_CONFIG.get('cache_enabled', True)
         self.cache_ttl = settings.EMBEDDING_CONFIG.get('cache_ttl', 3600)  # 1 hour
         
@@ -33,11 +32,10 @@ class EmbeddingModel:
             import google.generativeai as genai
             genai.configure(api_key=settings.GEMINI_API_KEY)
             self.client = genai
-            self.dimension = settings.EMBEDDING_CONFIG.get('dimension')
-            if self.dimension:
-                logger.info(f"Gemini embeddings ready. Dimension: {self.dimension}")
-            else:
-                logger.info("Gemini embeddings ready. Dimension: unknown (lazy)")
+            
+            # Get dimension by testing
+            self.dimension = self._get_embedding_dimension()
+            logger.info(f"Gemini embeddings ready. Dimension: {self.dimension}")
         except Exception as e:
             logger.error(f"Error initializing Gemini embeddings: {str(e)}", exc_info=True)
             raise
@@ -54,7 +52,7 @@ class EmbeddingModel:
         
         Args:
             texts: Single text or list of texts
-            batch_size: Batch size for encoding
+            batch_size: Batch size for encoding (ignored for Gemini)
             show_progress: Show progress bar
             normalize: Normalize embeddings to unit length
         
@@ -75,11 +73,11 @@ class EmbeddingModel:
                     logger.debug("Using cached embedding")
                     return cached_embedding
             
-            # Generate embeddings (Gemini API)
-            if single_input:
-                embeddings = self._embed_single(texts[0])
-            else:
-                embeddings = self._embed_batch(texts)
+            # Generate embeddings
+            if show_progress:
+                logger.info(f"Generating embeddings for {len(texts)} texts...")
+            
+            embeddings = self._embed_batch(texts)
 
             if normalize:
                 embeddings = self._normalize_embeddings(embeddings)
@@ -106,7 +104,7 @@ class EmbeddingModel:
         
         Args:
             texts: List of texts
-            batch_size: Batch size
+            batch_size: Batch size (ignored for Gemini)
             show_progress: Show progress bar
         
         Returns:
@@ -125,16 +123,23 @@ class EmbeddingModel:
             content=text,
             task_type="retrieval_document"
         )
+        
+        # Handle different response formats
         if hasattr(result, "embedding"):
             embedding = result.embedding
+        elif isinstance(result, dict):
+            embedding = result.get('embedding') or result.get('embeddings', [])
         else:
-            embedding = result.get('embedding') or result.get('embeddings')
+            embedding = result
+            
         return np.array(embedding, dtype='float32')
 
     def _embed_batch(self, texts: List[str]) -> np.ndarray:
         """Embed a batch of texts using Gemini (sequential calls)"""
         embeddings = []
-        for text in texts:
+        for i, text in enumerate(texts):
+            if i > 0 and i % 10 == 0:
+                logger.debug(f"Processed {i}/{len(texts)} embeddings...")
             embedding = self._embed_single(text)
             embeddings.append(embedding)
         return np.vstack(embeddings)
@@ -150,8 +155,12 @@ class EmbeddingModel:
 
     def _get_embedding_dimension(self) -> int:
         """Determine embedding dimension by embedding a short probe"""
-        probe = self._embed_single("dimension probe")
-        return int(probe.shape[0])
+        try:
+            probe = self._embed_single("test")
+            return int(probe.shape[0])
+        except Exception as e:
+            logger.warning(f"Could not determine dimension: {e}")
+            return 768  # Default fallback
     
     def _get_cache_key(self, text: str) -> str:
         """Generate cache key for text"""
@@ -194,97 +203,8 @@ class EmbeddingModel:
         """Clear all cached embeddings"""
         if self.cache_enabled:
             logger.info("Clearing embedding cache")
-            cache.delete_pattern("embedding:*")
-    
-    @staticmethod
-    def get_available_models() -> List[str]:
-        """
-        Get list of recommended embedding models
-        
-        Returns:
-            List of model names
-        """
-        return [
-            'models/embedding-001',
-        ]
-    
-    @staticmethod
-    def get_model_info(model_name: str) -> dict:
-        """
-        Get information about a model
-        
-        Args:
-            model_name: Model name
-        
-        Returns:
-            Dictionary with model info
-        """
-        model_specs = {
-            'models/embedding-001': {
-                'dimension': 'variable',
-                'max_length': 'provider-defined',
-                'speed': 'fast',
-                'quality': 'good',
-                'multilingual': True,
-            },
-        }
-        
-        return model_specs.get(
-            model_name,
-            {'dimension': 'unknown', 'info': 'No info available'}
-        )
-
-
-class EmbeddingCache:
-    """
-    Advanced caching for embeddings with persistence
-    """
-    
-    def __init__(self, cache_dir: str = None):
-        """
-        Initialize embedding cache
-        
-        Args:
-            cache_dir: Directory to store cache files
-        """
-        from pathlib import Path
-        
-        if cache_dir is None:
-            cache_dir = settings.VECTOR_STORE_PATH / 'embedding_cache'
-        
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        
-        logger.info(f"Embedding cache initialized at {self.cache_dir}")
-    
-    def get(self, key: str) -> np.ndarray:
-        """Get cached embedding"""
-        import hashlib
-        key_hash = hashlib.md5(key.encode()).hexdigest()
-        cache_file = self.cache_dir / f"{key_hash}.npy"
-        
-        if cache_file.exists():
+            # Use try-except for Django cache pattern deletion
             try:
-                return np.load(cache_file)
-            except Exception as e:
-                logger.error(f"Error loading cache: {str(e)}")
-                return None
-        return None
-    
-    def set(self, key: str, embedding: np.ndarray):
-        """Cache embedding"""
-        import hashlib
-        key_hash = hashlib.md5(key.encode()).hexdigest()
-        cache_file = self.cache_dir / f"{key_hash}.npy"
-        
-        try:
-            np.save(cache_file, embedding)
-        except Exception as e:
-            logger.error(f"Error saving cache: {str(e)}")
-    
-    def clear(self):
-        """Clear all cached embeddings"""
-        import shutil
-        shutil.rmtree(self.cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-        logger.info("Embedding cache cleared")
+                cache.delete_pattern("embedding:*")
+            except:
+                logger.warning("Cache pattern deletion not supported, skipping")

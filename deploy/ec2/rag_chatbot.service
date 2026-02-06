@@ -1,0 +1,17 @@
+[Unit]
+Description=RAG Chatbot (Gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=ragapp
+Group=ragapp
+WorkingDirectory=/opt/rag_chatbot
+EnvironmentFile=/opt/rag_chatbot/.env
+ExecStart=/opt/rag_chatbot/.venv/bin/gunicorn rag_chatbot.wsgi:application --config /opt/rag_chatbot/gunicorn.conf.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
