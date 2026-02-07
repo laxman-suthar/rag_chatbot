@@ -34,3 +34,8 @@ redis==5.0.1  # Caching & Celery broker
 gunicorn==21.2.0
 whitenoise==6.6.0  # Static files serving
 sentry-sdk==1.40.0  # Error tracking
+
+langchain==0.2.16
+langchain-google-genai==1.0.10
+langchain-community==0.2.16
+langchain-chroma==0.1.2

@@ -1,35 +1,45 @@
 """
-Document Processor for ingesting and chunking documents
-Supports PDF, DOCX, TXT, HTML, and Markdown
+Document Processor using LangChain for document loading and text splitting
 """
 
 import logging
-import re
 from pathlib import Path
 from typing import List, Dict, Tuple
 from django.conf import settings
-import numpy as np
 
-# Document processing imports
-from pypdf import PdfReader  # Changed from PyPDF2
-from docx import Document as DocxDocument
-from bs4 import BeautifulSoup
+# LangChain imports
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.document_loaders import (
+    PyPDFLoader,
+    Docx2txtLoader,
+    TextLoader,
+    UnstructuredHTMLLoader,
+    UnstructuredMarkdownLoader
+)
 
 logger = logging.getLogger('rag_service')
 
 
 class DocumentProcessor:
     """
-    Process documents and prepare them for indexing
+    Process documents using LangChain loaders and splitters
     """
     
     def __init__(self):
-        """Initialize document processor"""
+        """Initialize document processor with LangChain text splitter"""
         self.chunk_size = settings.RAG_CONFIG['chunk_size']
         self.chunk_overlap = settings.RAG_CONFIG['chunk_overlap']
         
+        # Initialize LangChain text splitter
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            length_function=len,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
+        
         logger.info(
-            f"Document processor initialized. "
+            f"LangChain document processor initialized. "
             f"Chunk size: {self.chunk_size}, Overlap: {self.chunk_overlap}"
         )
     
@@ -40,7 +50,7 @@ class DocumentProcessor:
         document_title: str
     ) -> Tuple[List[str], List[Dict]]:
         """
-        Process a document and return chunks with metadata
+        Process a document using LangChain and return chunks with metadata
         
         Args:
             file_path: Path to document file
@@ -54,216 +64,64 @@ class DocumentProcessor:
             file_path = Path(file_path)
             file_ext = file_path.suffix.lower()
             
-            logger.info(f"Processing document: {document_title} ({file_ext})")
+            logger.info(f"Processing document with LangChain: {document_title} ({file_ext})")
             
-            # Extract text based on file type
-            if file_ext == '.pdf':
-                text, page_map = self._extract_pdf(file_path)
-            elif file_ext == '.docx':
-                text, page_map = self._extract_docx(file_path)
-            elif file_ext == '.txt':
-                text, page_map = self._extract_txt(file_path)
-            elif file_ext in ['.html', '.htm']:
-                text, page_map = self._extract_html(file_path)
-            elif file_ext == '.md':
-                text, page_map = self._extract_markdown(file_path)
-            else:
-                raise ValueError(f"Unsupported file type: {file_ext}")
+            # Load document using appropriate LangChain loader
+            loader = self._get_loader(file_path, file_ext)
+            documents = loader.load()
             
-            if not text.strip():
-                raise ValueError("No text extracted from document")
+            if not documents:
+                raise ValueError("No content extracted from document")
             
-            # Clean text
-            text = self._clean_text(text)
+            # Split documents into chunks using LangChain
+            chunks = self.text_splitter.split_documents(documents)
             
-            # Create chunks
-            chunks = self._create_chunks(text)
-            
-            # Create metadata for each chunk
+            # Extract text and create metadata
+            chunk_texts = []
             metadata_list = []
+            
             for i, chunk in enumerate(chunks):
+                chunk_text = chunk.page_content
+                chunk_texts.append(chunk_text)
+                
+                # Combine LangChain metadata with our metadata
                 metadata = {
                     'document_id': document_id,
                     'document_title': document_title,
                     'chunk_index': i,
-                    'content': chunk,
-                    'file_type': file_ext[1:],  # Remove dot
-                    'page_number': self._get_page_for_chunk(i, page_map) if page_map else None,
+                    'content': chunk_text,
+                    'file_type': file_ext[1:],
+                    'page_number': chunk.metadata.get('page', chunk.metadata.get('page_number')),
+                    'source': chunk.metadata.get('source', str(file_path)),
                 }
                 metadata_list.append(metadata)
             
             logger.info(
-                f"Processed {document_title}: {len(text)} chars -> {len(chunks)} chunks"
+                f"Processed {document_title} with LangChain: {len(chunks)} chunks"
             )
             
-            return chunks, metadata_list
+            return chunk_texts, metadata_list
             
         except Exception as e:
             logger.error(f"Error processing document: {str(e)}", exc_info=True)
             raise
     
-    def _extract_pdf(self, file_path: Path) -> Tuple[str, Dict]:
-        """Extract text from PDF using pypdf"""
-        try:
-            text_parts = []
-            page_map = {}  # Maps chunk index to page number
-            current_char_count = 0
-            
-            with open(file_path, 'rb') as file:
-                pdf_reader = PdfReader(file)  # Changed from PyPDF2.PdfReader
-                
-                for page_num, page in enumerate(pdf_reader.pages, 1):
-                    page_text = page.extract_text()
-                    if page_text:
-                        start_char = current_char_count
-                        text_parts.append(page_text)
-                        current_char_count += len(page_text)
-                        page_map[page_num] = (start_char, current_char_count)
-            
-            return '\n\n'.join(text_parts), page_map
-            
-        except Exception as e:
-            logger.error(f"Error extracting PDF: {str(e)}", exc_info=True)
-            raise
-    
-    def _extract_docx(self, file_path: Path) -> Tuple[str, Dict]:
-        """Extract text from DOCX"""
-        try:
-            doc = DocxDocument(file_path)
-            paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
-            return '\n\n'.join(paragraphs), {}
-            
-        except Exception as e:
-            logger.error(f"Error extracting DOCX: {str(e)}", exc_info=True)
-            raise
-    
-    def _extract_txt(self, file_path: Path) -> Tuple[str, Dict]:
-        """Extract text from TXT file"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                return file.read(), {}
-                
-        except UnicodeDecodeError:
-            # Try different encoding
-            with open(file_path, 'r', encoding='latin-1') as file:
-                return file.read(), {}
-    
-    def _extract_html(self, file_path: Path) -> Tuple[str, Dict]:
-        """Extract text from HTML"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                soup = BeautifulSoup(file.read(), 'html.parser')
-                
-                # Remove script and style elements
-                for script in soup(['script', 'style']):
-                    script.decompose()
-                
-                # Get text
-                text = soup.get_text()
-                
-                return text, {}
-                
-        except Exception as e:
-            logger.error(f"Error extracting HTML: {str(e)}", exc_info=True)
-            raise
-    
-    def _extract_markdown(self, file_path: Path) -> Tuple[str, Dict]:
-        """Extract text from Markdown (as plain text)"""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as file:
-                # Just return markdown as-is (no conversion needed for RAG)
-                text = file.read()
-                return text, {}
-                
-        except Exception as e:
-            logger.error(f"Error extracting Markdown: {str(e)}", exc_info=True)
-            raise
-    
-    def _clean_text(self, text: str) -> str:
-        """Clean and normalize text"""
-        # Remove multiple newlines
-        text = re.sub(r'\n{3,}', '\n\n', text)
+    def _get_loader(self, file_path: Path, file_ext: str):
+        """Get appropriate LangChain document loader for file type"""
+        loaders = {
+            '.pdf': PyPDFLoader,
+            '.docx': Docx2txtLoader,
+            '.txt': TextLoader,
+            '.html': UnstructuredHTMLLoader,
+            '.htm': UnstructuredHTMLLoader,
+            '.md': UnstructuredMarkdownLoader,
+        }
         
-        # Remove multiple spaces
-        text = re.sub(r' {2,}', ' ', text)
+        loader_class = loaders.get(file_ext)
+        if not loader_class:
+            raise ValueError(f"Unsupported file type: {file_ext}")
         
-        # Remove leading/trailing whitespace from lines
-        lines = [line.strip() for line in text.split('\n')]
-        text = '\n'.join(lines)
-        
-        return text.strip()
-    
-    def _create_chunks(self, text: str) -> List[str]:
-        """
-        Split text into chunks with overlap
-        
-        Args:
-            text: Text to split
-        
-        Returns:
-            List of text chunks
-        """
-        # Split by sentences first for better chunk boundaries
-        sentences = self._split_into_sentences(text)
-        
-        chunks = []
-        current_chunk = []
-        current_length = 0
-        
-        for sentence in sentences:
-            sentence_length = len(sentence)
-            
-            # If adding this sentence exceeds chunk size
-            if current_length + sentence_length > self.chunk_size and current_chunk:
-                # Save current chunk
-                chunks.append(' '.join(current_chunk))
-                
-                # Start new chunk with overlap
-                # Keep last few sentences for overlap
-                overlap_sentences = []
-                overlap_length = 0
-                for s in reversed(current_chunk):
-                    if overlap_length + len(s) <= self.chunk_overlap:
-                        overlap_sentences.insert(0, s)
-                        overlap_length += len(s)
-                    else:
-                        break
-                
-                current_chunk = overlap_sentences
-                current_length = overlap_length
-            
-            current_chunk.append(sentence)
-            current_length += sentence_length
-        
-        # Add last chunk
-        if current_chunk:
-            chunks.append(' '.join(current_chunk))
-        
-        return chunks
-    
-    def _split_into_sentences(self, text: str) -> List[str]:
-        """
-        Split text into sentences
-        
-        Args:
-            text: Text to split
-        
-        Returns:
-            List of sentences
-        """
-        # Simple sentence splitting
-        sentences = re.split(r'(?<=[.!?])\s+', text)
-        return [s.strip() for s in sentences if s.strip()]
-    
-    def _get_page_for_chunk(self, chunk_index: int, page_map: Dict) -> int:
-        """Estimate page number for a chunk (for PDFs)"""
-        if not page_map:
-            return None
-        
-        # Return middle page as approximation
-        total_pages = len(page_map)
-        estimated_page = min(chunk_index + 1, total_pages)
-        return estimated_page
+        return loader_class(str(file_path))
     
     def get_document_stats(self, file_path: str) -> Dict:
         """
@@ -287,9 +145,12 @@ class DocumentProcessor:
             
             # Get page count for PDFs
             if file_ext == '.pdf':
-                with open(file_path, 'rb') as file:
-                    pdf_reader = PdfReader(file)  # Changed from PyPDF2
-                    stats['page_count'] = len(pdf_reader.pages)
+                try:
+                    loader = PyPDFLoader(str(file_path))
+                    documents = loader.load()
+                    stats['page_count'] = len(documents)
+                except:
+                    pass
             
             return stats
             
@@ -298,10 +159,9 @@ class DocumentProcessor:
             return {}
 
 
-# Rest of the DocumentIndexer class remains the same
 class DocumentIndexer:
     """
-    High-level document indexing with vector store integration
+    High-level document indexing with LangChain and vector store integration
     """
     
     def __init__(self, embedding_model, vector_store):
@@ -309,14 +169,14 @@ class DocumentIndexer:
         Initialize document indexer
         
         Args:
-            embedding_model: EmbeddingModel instance
+            embedding_model: EmbeddingModel instance (LangChain-based)
             vector_store: VectorStore instance
         """
         self.processor = DocumentProcessor()
         self.embedding_model = embedding_model
         self.vector_store = vector_store
         
-        logger.info("Document indexer initialized")
+        logger.info("LangChain document indexer initialized")
     
     def index_document(
         self,
@@ -326,7 +186,7 @@ class DocumentIndexer:
         batch_size: int = 32
     ) -> int:
         """
-        Index a document into the vector store
+        Index a document into the vector store using LangChain
         
         Args:
             file_path: Path to document file
@@ -338,7 +198,7 @@ class DocumentIndexer:
             Number of chunks indexed
         """
         try:
-            # Process document
+            # Process document with LangChain
             chunks, metadata_list = self.processor.process_document(
                 file_path,
                 document_id,

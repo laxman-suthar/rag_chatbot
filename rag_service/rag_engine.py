@@ -1,13 +1,20 @@
 """
-RAG (Retrieval-Augmented Generation) Engine
-Core logic for document retrieval and response generation
- FIXED VERSION - Gemini-only
+RAG Engine using LangChain for retrieval and generation
 """
 
 import logging
 import time
 from typing import List, Dict, Tuple, Optional
 from django.conf import settings
+
+# LangChain imports
+from langchain.chains import RetrievalQA
+from langchain.prompts import PromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.vectorstores import Chroma
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain.schema import Document
+
 from .vector_store import VectorStore
 from .embeddings import EmbeddingModel
 
@@ -16,30 +23,58 @@ logger = logging.getLogger('rag_service')
 
 class RAGEngine:
     """
-    Main RAG Engine for handling queries and generating responses
+    LangChain-powered RAG Engine for handling queries and generating responses
     """
     
     def __init__(self):
-        """Initialize RAG engine with vector store and LLM client"""
+        """Initialize RAG engine with LangChain components"""
         self.vector_store = VectorStore()
         self.embedding_model = EmbeddingModel()
         
-        # Initialize LLM client based on provider
-        if settings.LLM_CONFIG['provider'] == 'gemini':
-            try:
-                import google.generativeai as genai
-                genai.configure(api_key=settings.GEMINI_API_KEY)
-                self.llm_client = genai
-            except Exception as e:
-                logger.error(f"Failed to initialize Gemini client: {str(e)}")
-                raise
-        else:
-            raise ValueError(f"Unsupported LLM provider: {settings.LLM_CONFIG['provider']}")
+        # Initialize LangChain LLM
+        self.llm = ChatGoogleGenerativeAI(
+            model=settings.LLM_CONFIG['model'],
+            google_api_key=settings.GEMINI_API_KEY,
+            temperature=0.7
+        )
+        
+        # Initialize LangChain embeddings for retriever
+        self.lc_embeddings = GoogleGenerativeAIEmbeddings(
+            model=settings.EMBEDDING_CONFIG['model_name'],
+            google_api_key=settings.GEMINI_API_KEY
+        )
         
         self.config = settings.RAG_CONFIG
         self.llm_config = settings.LLM_CONFIG
         
-        logger.info("RAG Engine initialized successfully")
+        # Create custom prompt template
+        self.prompt_template = self._create_prompt_template()
+        
+        logger.info("LangChain RAG Engine initialized successfully")
+    
+    def _create_prompt_template(self) -> PromptTemplate:
+        """Create custom prompt template for RAG"""
+        template = """You are a helpful customer support assistant. Your role is to answer questions accurately based on the provided context.
+
+Guidelines:
+1. Answer questions using ONLY the information from the context provided
+2. If the context doesn't contain enough information, say so honestly
+3. Be concise but thorough in your explanations
+4. If you're not sure about something, acknowledge the uncertainty
+5. Use a friendly, professional tone
+6. Format your response clearly with bullet points or numbered lists when appropriate
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""
+        
+        return PromptTemplate(
+            template=template,
+            input_variables=["context", "question"]
+        )
     
     def get_response(
         self,
@@ -48,12 +83,12 @@ class RAGEngine:
         top_k: Optional[int] = None
     ) -> Dict:
         """
-        Get response for a user query using RAG
+        Get response using LangChain RAG pipeline
         
         Args:
             query: User's question
             conversation_history: Previous conversation messages
-            top_k: Number of chunks to retrieve (overrides config)
+            top_k: Number of chunks to retrieve
         
         Returns:
             Dictionary with response and metadata
@@ -77,9 +112,9 @@ class RAGEngine:
                     'total_time': time.time() - start_time
                 }
             
-            # Step 2: Generate response using LLM
+            # Step 2: Generate response using LangChain
             llm_start = time.time()
-            response, sources = self.generate_response(
+            response, sources = self.generate_response_langchain(
                 query,
                 retrieved_chunks,
                 conversation_history
@@ -89,7 +124,7 @@ class RAGEngine:
             total_time = time.time() - start_time
             
             logger.info(
-                f"Query processed successfully. "
+                f"Query processed with LangChain. "
                 f"Retrieval: {retrieval_time:.2f}s, LLM: {llm_time:.2f}s, Total: {total_time:.2f}s"
             )
             
@@ -154,14 +189,14 @@ class RAGEngine:
             logger.error(f"Error in retrieve_context: {str(e)}", exc_info=True)
             return []
     
-    def generate_response(
+    def generate_response_langchain(
         self,
         query: str,
         retrieved_chunks: List[Dict],
         conversation_history: Optional[List[Dict]] = None
     ) -> Tuple[str, List[Dict]]:
         """
-        Generate response using LLM with retrieved context
+        Generate response using LangChain's RetrievalQA chain
         
         Args:
             query: User's question
@@ -175,25 +210,22 @@ class RAGEngine:
             # Build context from chunks
             context = self._build_context(retrieved_chunks)
             
-            # Build system prompt
-            system_prompt = self._build_system_prompt(context)
+            # Format prompt with context and query
+            formatted_prompt = self.prompt_template.format(
+                context=context,
+                question=query
+            )
             
-            # Build messages
-            messages = self._build_messages(query, conversation_history)
-            
-            # Generate response based on provider
-            if self.llm_config['provider'] == 'gemini':
-                response_text = self._generate_gemini(system_prompt, messages)
-            else:
-                raise ValueError(f"Unsupported provider: {self.llm_config['provider']}")
+            # Generate response using LangChain LLM
+            response = self.llm.predict(formatted_prompt)
             
             # Extract sources
             sources = self._extract_sources(retrieved_chunks)
             
-            return response_text, sources
+            return response, sources
             
         except Exception as e:
-            logger.error(f"Error in generate_response: {str(e)}", exc_info=True)
+            logger.error(f"Error in generate_response_langchain: {str(e)}", exc_info=True)
             raise
     
     def _build_context(self, chunks: List[Dict]) -> str:
@@ -212,65 +244,6 @@ class RAGEngine:
             current_length += len(chunk_text)
         
         return "\n".join(context_parts)
-    
-    def _build_system_prompt(self, context: str) -> str:
-        """Build system prompt with context"""
-        return f"""You are a helpful customer support assistant. Your role is to answer questions accurately based on the provided context.
-
-Guidelines:
-1. Answer questions using ONLY the information from the context provided
-2. If the context doesn't contain enough information, say so honestly
-3. Be concise but thorough in your explanations
-4. If you're not sure about something, acknowledge the uncertainty
-5. Use a friendly, professional tone
-6. Format your response clearly with bullet points or numbered lists when appropriate
-
-Context Information:
-{context}
-
-Remember: Only use information from the context above. If the answer isn't in the context, politely let the user know and suggest how they might get help."""
-    
-    def _build_messages(
-        self,
-        query: str,
-        conversation_history: Optional[List[Dict]] = None
-    ) -> List[Dict]:
-        """Build message list for LLM"""
-        messages = []
-        
-        # Add conversation history if provided
-        if conversation_history:
-            for msg in conversation_history[-5:]:  # Last 5 messages
-                messages.append({
-                    'role': msg['role'],
-                    'content': msg['content']
-                })
-        
-        # Add current query
-        messages.append({
-            'role': 'user',
-            'content': query
-        })
-        
-        return messages
-    
-    def _generate_gemini(self, system_prompt: str, messages: List[Dict]) -> str:
-        """Generate response using Google Gemini"""
-        try:
-            # Build a simple prompt that includes system guidance and chat history
-            prompt_lines = [f"System: {system_prompt}", "Conversation:"]
-            for msg in messages:
-                role = msg.get('role', 'user')
-                content = msg.get('content', '')
-                prompt_lines.append(f"{role.capitalize()}: {content}")
-            prompt = "\n".join(prompt_lines)
-
-            model = self.llm_client.GenerativeModel(self.llm_config['model'])
-            response = model.generate_content(prompt)
-            return getattr(response, 'text', '') or ''
-        except Exception as e:
-            logger.error(f"Error calling Gemini API: {str(e)}", exc_info=True)
-            raise
     
     def _extract_sources(self, chunks: List[Dict]) -> List[Dict]:
         """Extract source information from chunks"""
@@ -293,10 +266,9 @@ Remember: Only use information from the context above. If the answer isn't in th
     def clear_cache(self):
         """Clear any cached data"""
         logger.info("Clearing RAG engine cache")
-        # Implement if you add caching
-        pass
+        self.embedding_model.clear_cache()
     
     def reload_index(self):
         """Reload the vector store index"""
         logger.info("Reloading vector store index")
-        self.vector_store.load_index()
+        self.vector_store._init_client()

@@ -1,5 +1,5 @@
 """
-Embedding Model wrapper using Gemini embeddings
+Embedding Model wrapper using LangChain + Gemini embeddings
 """
 
 import logging
@@ -8,36 +8,40 @@ from typing import List, Union
 from django.conf import settings
 from django.core.cache import cache
 
+# LangChain imports
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
 logger = logging.getLogger('rag_service')
 
 
 class EmbeddingModel:
     """
-    Wrapper for embedding model with caching support
+    LangChain-based wrapper for embedding model with caching support
     """
     
     def __init__(self):
-        """Initialize embedding model"""
+        """Initialize embedding model using LangChain"""
         self.provider = settings.EMBEDDING_CONFIG.get('provider', 'gemini')
         self.model_name = settings.EMBEDDING_CONFIG['model_name']
         self.cache_enabled = settings.EMBEDDING_CONFIG.get('cache_enabled', True)
-        self.cache_ttl = settings.EMBEDDING_CONFIG.get('cache_ttl', 3600)  # 1 hour
+        self.cache_ttl = settings.EMBEDDING_CONFIG.get('cache_ttl', 3600)
         
         if self.provider != 'gemini':
             raise ValueError(f"Unsupported embedding provider: {self.provider}")
 
-        # Initialize Gemini client
-        logger.info(f"Initializing Gemini embeddings: {self.model_name}")
+        # Initialize LangChain Gemini embeddings
+        logger.info(f"Initializing LangChain Gemini embeddings: {self.model_name}")
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            self.client = genai
+            self.embeddings = GoogleGenerativeAIEmbeddings(
+                model=self.model_name,
+                google_api_key=settings.GEMINI_API_KEY
+            )
             
             # Get dimension by testing
             self.dimension = self._get_embedding_dimension()
-            logger.info(f"Gemini embeddings ready. Dimension: {self.dimension}")
+            logger.info(f"LangChain Gemini embeddings ready. Dimension: {self.dimension}")
         except Exception as e:
-            logger.error(f"Error initializing Gemini embeddings: {str(e)}", exc_info=True)
+            logger.error(f"Error initializing LangChain embeddings: {str(e)}", exc_info=True)
             raise
     
     def encode(
@@ -48,11 +52,11 @@ class EmbeddingModel:
         normalize: bool = True
     ) -> np.ndarray:
         """
-        Generate embeddings for text(s)
+        Generate embeddings for text(s) using LangChain
         
         Args:
             texts: Single text or list of texts
-            batch_size: Batch size for encoding (ignored for Gemini)
+            batch_size: Batch size for encoding
             show_progress: Show progress bar
             normalize: Normalize embeddings to unit length
         
@@ -73,11 +77,13 @@ class EmbeddingModel:
                     logger.debug("Using cached embedding")
                     return cached_embedding
             
-            # Generate embeddings
+            # Generate embeddings using LangChain
             if show_progress:
                 logger.info(f"Generating embeddings for {len(texts)} texts...")
             
-            embeddings = self._embed_batch(texts)
+            # LangChain's embed_documents handles batching internally
+            embeddings_list = self.embeddings.embed_documents(texts)
+            embeddings = np.array(embeddings_list, dtype='float32')
 
             if normalize:
                 embeddings = self._normalize_embeddings(embeddings)
@@ -100,11 +106,11 @@ class EmbeddingModel:
         show_progress: bool = True
     ) -> np.ndarray:
         """
-        Encode large batch of texts efficiently
+        Encode large batch of texts efficiently using LangChain
         
         Args:
             texts: List of texts
-            batch_size: Batch size (ignored for Gemini)
+            batch_size: Batch size
             show_progress: Show progress bar
         
         Returns:
@@ -115,34 +121,6 @@ class EmbeddingModel:
             batch_size=batch_size,
             show_progress=show_progress
         )
-
-    def _embed_single(self, text: str) -> np.ndarray:
-        """Embed a single text using Gemini"""
-        result = self.client.embed_content(
-            model=self.model_name,
-            content=text,
-            task_type="retrieval_document"
-        )
-        
-        # Handle different response formats
-        if hasattr(result, "embedding"):
-            embedding = result.embedding
-        elif isinstance(result, dict):
-            embedding = result.get('embedding') or result.get('embeddings', [])
-        else:
-            embedding = result
-            
-        return np.array(embedding, dtype='float32')
-
-    def _embed_batch(self, texts: List[str]) -> np.ndarray:
-        """Embed a batch of texts using Gemini (sequential calls)"""
-        embeddings = []
-        for i, text in enumerate(texts):
-            if i > 0 and i % 10 == 0:
-                logger.debug(f"Processed {i}/{len(texts)} embeddings...")
-            embedding = self._embed_single(text)
-            embeddings.append(embedding)
-        return np.vstack(embeddings)
 
     def _normalize_embeddings(self, embeddings: np.ndarray) -> np.ndarray:
         """L2-normalize embeddings"""
@@ -156,8 +134,8 @@ class EmbeddingModel:
     def _get_embedding_dimension(self) -> int:
         """Determine embedding dimension by embedding a short probe"""
         try:
-            probe = self._embed_single("test")
-            return int(probe.shape[0])
+            probe = self.embeddings.embed_query("test")
+            return int(len(probe))
         except Exception as e:
             logger.warning(f"Could not determine dimension: {e}")
             return 768  # Default fallback
@@ -203,7 +181,6 @@ class EmbeddingModel:
         """Clear all cached embeddings"""
         if self.cache_enabled:
             logger.info("Clearing embedding cache")
-            # Use try-except for Django cache pattern deletion
             try:
                 cache.delete_pattern("embedding:*")
             except:
